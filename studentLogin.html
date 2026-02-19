@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Login</title>
+
+  <style>
+    body { 
+      font-family:'Segoe UI', sans-serif; 
+      background: radial-gradient(circle at center, #000010 0%, #000020 100%); 
+      color:#00f5ff; 
+      display:flex; 
+      justify-content:center; 
+      align-items:center; 
+      min-height:100vh; 
+    }
+
+    .container { 
+      background: rgba(0,0,30,0.65); 
+      border:2px solid #00f5ff; 
+      border-radius:20px; 
+      padding:40px 30px; 
+      width:90%; 
+      max-width:500px; 
+      text-align:center; 
+      box-shadow:0 0 40px #00f5ff; 
+    }
+
+    h2 { 
+      margin-bottom:25px; 
+      font-size:2rem; 
+      text-shadow:0 0 10px #00f5ff; 
+    }
+
+    input { 
+      width:90%; 
+      padding:12px 16px; 
+      margin:10px 0; 
+      border:2px solid #00f5ff; 
+      border-radius:8px; 
+      background:transparent; 
+      color:#00f5ff; 
+      font-size:1rem; 
+      outline:none; 
+    }
+
+    input::placeholder { 
+      color: rgba(0,245,255,0.4); 
+    }
+
+    button { 
+      width:100%; 
+      padding:12px; 
+      margin-top:20px; 
+      background:transparent; 
+      color:#00f5ff; 
+      border:2px solid #00f5ff; 
+      border-radius:8px; 
+      font-size:1rem; 
+      font-weight:bold; 
+      cursor:pointer; 
+      transition:0.3s; 
+    }
+
+    button:hover { 
+      background:#00f5ff; 
+      color:#000; 
+      transform:scale(1.05); 
+    }
+
+    .error { 
+      color:#ff4b5c; 
+      margin-top:15px; 
+      font-size:0.9rem; 
+    }
+
+    .options-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      width:90%;
+      margin:20px auto 0;
+    }
+
+    .show-pass {
+      display:flex;
+      align-items:center;
+      gap:5px;
+      font-size:0.9rem;
+    }
+
+    .forgot-link {
+      font-size:0.9rem;
+      cursor:pointer;
+      color:#00f5ff;
+      text-decoration:underline;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>Student Login</h2>
+
+  <form id="loginForm" novalidate>
+    <!-- KEEPING EMAIL FIELD AS-IS (used as Roll No) -->
+    <input type="text" id="email"
+      placeholder="Roll Number"
+      required />
+
+    <input type="password" id="password" placeholder="Password" required />
+
+    <button type="submit">Login</button>
+
+    <div class="options-row">
+      <div class="show-pass">
+        <input type="checkbox" id="showPass">
+        <label for="showPass">Show Password</label>
+      </div>
+      <span class="forgot-link" onclick="forgotPassword()">Forgot Password?</span>
+    </div>
+
+    <p class="error" id="errorMsg"></p>
+  </form>
+</div>
+
+<script>
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const rollno = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const errorMsg = document.getElementById("errorMsg");
+
+  errorMsg.textContent = "";
+
+  // Password only UI-level check
+  if (password.length < 4) {
+    errorMsg.textContent = "❌ Invalid password";
+    return;
+  }
+
+  try {
+    const response = await fetch("http://localhost:5001/student-login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email: rollno }) // sending as email
+});
+
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      errorMsg.textContent = "❌ " + data.message;
+      return;
+    }
+    // Save roll number in localStorage
+localStorage.setItem("rollno", rollno);
+
+// (Optional) Save subject if needed
+localStorage.setItem("subject", "java");
+
+alert("🎉 Login Successful");
+window.location.href = "student.html";
+
+  
+
+  } catch (err) {
+    errorMsg.textContent = "❌ Cannot connect to server";
+  }
+});
+
+// Show password
+document.getElementById("showPass").addEventListener("change", function () {
+  document.getElementById("password").type = this.checked ? "text" : "password";
+});
+
+// Disabled forgot password
+function forgotPassword() {
+  alert("⚠️ Password recovery is not enabled");
+}
+</script>
+
+</body>
+</html>

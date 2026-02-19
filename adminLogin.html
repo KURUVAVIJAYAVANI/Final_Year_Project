@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Login</title>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: radial-gradient(circle at center, #000010 0%, #000020 100%);
+  color: #00f5ff;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.circuit-bg {
+  position: absolute;
+  inset: 0;
+  background: url('https://cdn.pixabay.com/photo/2016/12/06/18/27/abstract-1889593_1280.png') center/cover;
+  opacity: 0.05;
+  z-index: 0;
+}
+
+.login-container {
+  z-index: 1;
+  background: rgba(0,0,30,0.7);
+  border: 2px solid #00f5ff;
+  box-shadow: 0 0 40px #00f5ff;
+  border-radius: 20px;
+  padding: 40px 30px;
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+}
+
+.login-container h2 {
+  margin-bottom: 25px;
+  font-size: 2rem;
+  text-shadow: 0 0 10px #00f5ff;
+}
+
+.input-field {
+  margin: 18px 0;
+  position: relative;
+}
+
+.input-field input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #00f5ff;
+  background: transparent;
+  color: #00f5ff;
+  font-size: 1rem;
+  border-radius: 8px;
+  outline: none;
+}
+
+.input-field input::placeholder {
+  color: rgba(0,245,255,0.3);
+}
+
+.toggle-password {
+  position: absolute;
+  right: 15px;
+  top: 13px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  color: #00f5ff;
+  border: 2px solid #00f5ff;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: 0.3s ease;
+}
+
+.login-btn:hover {
+  background: #00f5ff;
+  color: #000;
+  transform: scale(1.05);
+}
+
+.checkbox {
+  margin-top: 15px;
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #ff4b5c;
+  font-size: 0.9rem;
+  margin-top: 15px;
+}
+</style>
+</head>
+
+<body>
+<div class="circuit-bg"></div>
+
+<div class="login-container">
+  <h2>Admin Login</h2>
+
+  <form id="loginForm">
+    <div class="input-field">
+      <input type="email" id="email" placeholder="Email" required />
+    </div>
+
+    <div class="input-field">
+      <input type="password" id="password" placeholder="Password" required />
+      <span class="toggle-password" onclick="togglePassword()">👁</span>
+    </div>
+
+    <button type="submit" class="login-btn">Login</button>
+
+    <div class="checkbox">
+      <input type="checkbox" id="rememberMe" />
+      <label for="rememberMe">Remember Me</label>
+    </div>
+
+    <div class="error" id="errorMsg"></div>
+  </form>
+</div>
+
+<script>
+// Toggle Password Visibility
+function togglePassword() {
+  const passwordInput = document.getElementById("password");
+  passwordInput.type = passwordInput.type === "password" ? "text" : "password";
+}
+
+// Handle Login
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const email = document.getElementById("email").value.trim().toLowerCase();
+  const password = document.getElementById("password").value.trim();
+  const rememberMe = document.getElementById("rememberMe").checked;
+  const errorMsg = document.getElementById("errorMsg");
+
+  errorMsg.textContent = "";
+
+  // Validation
+  if (!email) {
+    errorMsg.textContent = "❌ Email required";
+    return;
+  }
+
+  if (!password) {
+    errorMsg.textContent = "❌ Password required";
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:5001/teacher-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+
+    // Handle non-JSON response safely
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error("Invalid server response");
+    }
+
+    if (!res.ok) {
+      errorMsg.textContent = "❌ " + (data.message || "Login failed");
+      return;
+    }
+
+    // Save token
+    if (data.token) {
+      localStorage.setItem("adminToken", data.token);
+    }
+
+    // Remember email
+    if (rememberMe) {
+      localStorage.setItem("adminEmail", email);
+    } else {
+      localStorage.removeItem("adminEmail");
+    }
+
+    alert("🎉 Admin login successful!");
+    window.location.href = "admin_sub.html";
+
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    errorMsg.textContent = "❌ Server not reachable";
+  }
+});
+
+// Auto-fill remembered email
+window.addEventListener("load", () => {
+  const savedEmail = localStorage.getItem("adminEmail");
+  if (savedEmail) {
+    document.getElementById("email").value = savedEmail;
+    document.getElementById("rememberMe").checked = true;
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subject QR</title>
+
+  <style>
+    body {
+      background: url('https://thumbs.dreamstime.com/b/cyber-security-fingerprint-dark-blue-abstract-digital-conceptual-technology-background-computer-technology-website-internet-144374317.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: white;
+      font-family: "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: -1;
+    }
+
+    h1 { margin-bottom: 20px; font-size: 2.2rem; text-align: center; }
+    .qr-box {
+      background: white;
+      width: 520px;
+      height: 520px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.6);
+    }
+    #countdown { margin-bottom: 20px; font-size: 1.2rem; }
+    .btn-group { display: flex; gap: 20px; }
+    button {
+      background: #00bcd4;
+      border: none;
+      padding: 12px 30px;
+      font-size: 1rem;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover:not(:disabled) { background: #0097a7; }
+    button:disabled { background: #555; cursor: not-allowed; }
+    @media (max-width: 600px) { .qr-box { width: 300px; height: 300px; } }
+  </style>
+</head>
+
+<body>
+<h1 id="subjectTitle">Subject</h1>
+
+<div class="qr-box" id="qrBox">
+  <img id="qr" alt="QR Code" style="width: 90%; height: 90%; object-fit: contain;">
+</div>
+
+
+
+<div id="countdown">Next QR in: 10s</div>
+
+<div class="btn-group">
+  <button id="startBtn" onclick="startQR()">Start QR</button>
+  <button id="stopBtn" onclick="stopQR()" disabled>Stop QR</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+<script>
+  const subject = new URLSearchParams(window.location.search).get("subject") || "Java";
+  document.getElementById("subjectTitle").innerText = subject;
+
+  let qrInterval, countdownInterval;
+  let isRunning = false;
+  let time = 10;
+
+async function generateQR() {
+  try {
+    const response = await fetch("http://localhost:5001/refresh-qr", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subject }),
+    });
+    const data = await response.json();
+
+    const qrImg = document.getElementById("qr");
+    qrImg.src = data.qrImage; // base64 QR from backend
+    time = 10;
+  } catch (err) {
+    console.error("Failed to generate QR:", err);
+    document.getElementById("qr").src = ""; // clear image
+    document.getElementById("countdown").innerText = "Failed to load QR";
+  }
+}
+
+
+
+  async function startQR() {
+  if (isRunning) return;
+  isRunning = true;
+
+  document.getElementById("startBtn").disabled = true;
+  document.getElementById("stopBtn").disabled = false;
+
+  try {
+    const res = await fetch("http://localhost:5001/start-qr", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subject }),
+    });
+    const data = await res.json();
+
+    const qrImg = document.getElementById("qr");
+    qrImg.src = data.qrImage;
+
+    time = 10; // reset countdown
+
+    countdownInterval = setInterval(() => {
+      time--;
+      if (time < 0) time = 0;
+      document.getElementById("countdown").innerText = `Next QR in: ${time}s`;
+    }, 1000);
+
+    qrInterval = setInterval(generateQR, 10000);
+  } catch (err) {
+    console.error("Failed to start QR:", err);
+    alert("Cannot start QR. Make sure backend is running.");
+    stopQR();
+  }
+}
+
+
+ function stopQR() {
+  clearInterval(qrInterval);
+  clearInterval(countdownInterval);
+  isRunning = false;
+
+  fetch("http://localhost:5001/stop-qr", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ subject }),
+  }).catch(err => console.warn("Failed to stop QR session:", err));
+
+  document.getElementById("countdown").innerText = "QR stopped";
+  document.getElementById("startBtn").disabled = false;
+  document.getElementById("stopBtn").disabled = true;
+}
+
+</script>
+</body>
+</html>

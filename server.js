@@ -245,10 +245,13 @@ app.post("/mark-attendance", (req, res) => {
 // GET ATTENDANCE RECORDS
 // ===============================
 app.get("/attendance-records", (req, res) => {
+
   let sql = "SELECT rollno, name, ";
+
   sql += subjects
-    .map(s => `CONCAT(${s}_present,'/',${s}_total) AS ${s}`)
+    .map(s => `CONCAT(${s}_present,'/30') AS ${s}`)
     .join(", ");
+
   sql += " FROM students_attendance ORDER BY rollno";
 
   db.query(sql, (err, rows) => {
@@ -264,10 +267,26 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
 
+
+// ========================
+// attendece Ui
+// ======================
+app.get("/view-students-attendance", (req, res) => {
+
+    const query = "SELECT * FROM students_attendance";
+
+    db.query(query, (err, result) => {
+        if (err) {
+            console.log(err);
+            res.status(500).send("Database error");
+        } else {
+            res.json(result);
+        }
+    });
+});
 // npm init -y
 // npm install express cors body-parser
 // npm install mysql2
 
 // npm install QRCode
 // npm install uuid
-// 
